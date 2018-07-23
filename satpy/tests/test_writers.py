@@ -300,7 +300,6 @@ class TestComputeWriterResults(unittest.TestCase):
         from datetime import datetime
 
         from satpy.scene import Scene
-        import xarray as xr
         import dask.array as da
 
         ds1 = xr.DataArray(
@@ -318,7 +317,6 @@ class TestComputeWriterResults(unittest.TestCase):
     def tearDown(self):
         """Remove the temporary directory created for a test"""
         try:
-            import shutil
             shutil.rmtree(self.base_dir, ignore_errors=True)
         except OSError:
             pass
