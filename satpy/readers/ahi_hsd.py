@@ -28,6 +28,7 @@ http://www.data.jma.go.jp/mscweb/en/himawari89/space_segment/spsg_ahi.html
 
 """
 
+import abc
 import logging
 from datetime import datetime, timedelta
 
@@ -214,15 +215,15 @@ _SPARE_TYPE = np.dtype([
 ])
 
 
-class AHIHSDFileHandler(BaseFileHandler):
+class AHIHSDBaseFileHandler(BaseFileHandler):
 
     """AHI standard format reader
     """
 
     def __init__(self, filename, filename_info, filetype_info):
         """Initialize the reader."""
-        super(AHIHSDFileHandler, self).__init__(filename, filename_info,
-                                                filetype_info)
+        super(AHIHSDBaseFileHandler, self).__init__(filename, filename_info,
+                                                    filetype_info)
 
         self.channels = dict([(i, None) for i in AHI_CHANNEL_NAMES])
         self.units = dict([(i, 'counts') for i in AHI_CHANNEL_NAMES])
@@ -234,21 +235,52 @@ class AHIHSDFileHandler(BaseFileHandler):
         self.segment_number = filename_info['segment_number']
         self.total_segments = filename_info['total_segments']
 
-        with open(self.filename) as fd:
-            self.basic_info = np.fromfile(fd,
-                                          dtype=_BASIC_INFO_TYPE,
-                                          count=1)
-            self.data_info = np.fromfile(fd,
-                                         dtype=_DATA_INFO_TYPE,
-                                         count=1)
-            self.proj_info = np.fromfile(fd,
-                                         dtype=_PROJ_INFO_TYPE,
-                                         count=1)[0]
-            self.nav_info = np.fromfile(fd,
-                                        dtype=_NAV_INFO_TYPE,
-                                        count=1)[0]
+        header_size = sum([t.itemsize for t in (_BASIC_INFO_TYPE,
+                                                _DATA_INFO_TYPE,
+                                                _PROJ_INFO_TYPE,
+                                                _NAV_INFO_TYPE)])
+        with self._open(self.filename, size=header_size) as fd:
+            self.basic_info = self._read_header(fd,
+                                                dtype=_BASIC_INFO_TYPE,
+                                                count=1)
+            self.data_info = self._read_header(fd,
+                                               dtype=_DATA_INFO_TYPE,
+                                               count=1)
+            self.proj_info = self._read_header(fd,
+                                               dtype=_PROJ_INFO_TYPE,
+                                               count=1)[0]
+            self.nav_info = self._read_header(fd,
+                                              dtype=_NAV_INFO_TYPE,
+                                              count=1)[0]
         self.platform_name = np2str(self.basic_info['satellite'])
         self.sensor = 'ahi'
+
+    @abc.abstractmethod
+    def _read_header(self, file_handle, dtype, count):
+        """Specifies how to read header records from the given file handle
+
+        :param file_handle: File handle to read the records from
+        :param dtype: Data type of the records
+        :param count: Number of records to be read
+        :return: numpy array
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def _read_data(self, filename, file_handle, dtype, shape):
+        """Specifies how to read the main image data block
+
+        :param file_handle: File handle to read the data from
+        :param filename: Corresponding file name
+        :param dtype: Data type of the elements in the data block
+        :param shape: Shape of the final array
+        :return: Numpy array or memory map
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def _open(self, filename, mode='r', size=None):
+        raise NotImplementedError
 
     def get_shape(self, dsid, ds_info):
         return int(self.data_info['number_of_lines']), int(self.data_info['number_of_columns'])
@@ -349,31 +381,35 @@ class AHIHSDFileHandler(BaseFileHandler):
         """Read the data"""
         tic = datetime.now()
         header = {}
-        with open(self.filename, "rb") as fp_:
+        with self._open(self.filename, mode="rb") as fp_:
 
-            header['block1'] = np.fromfile(
-                fp_, dtype=_BASIC_INFO_TYPE, count=1)
-            header["block2"] = np.fromfile(fp_, dtype=_DATA_INFO_TYPE, count=1)
-            header["block3"] = np.fromfile(fp_, dtype=_PROJ_INFO_TYPE, count=1)
-            header["block4"] = np.fromfile(fp_, dtype=_NAV_INFO_TYPE, count=1)
-            header["block5"] = np.fromfile(fp_, dtype=_CAL_INFO_TYPE, count=1)
+            header['block1'] = self._read_header(fp_, dtype=_BASIC_INFO_TYPE,
+                                                 count=1)
+            header["block2"] = self._read_header(fp_, dtype=_DATA_INFO_TYPE,
+                                                 count=1)
+            header["block3"] = self._read_header(fp_, dtype=_PROJ_INFO_TYPE,
+                                                 count=1)
+            header["block4"] = self._read_header(fp_, dtype=_NAV_INFO_TYPE,
+                                                 count=1)
+            header["block5"] = self._read_header(fp_, dtype=_CAL_INFO_TYPE,
+                                                 count=1)
             logger.debug("Band number = " +
                          str(header["block5"]['band_number'][0]))
             logger.debug('Time_interval: %s - %s',
                          str(self.start_time), str(self.end_time))
             band_number = header["block5"]['band_number'][0]
             if band_number < 7:
-                cal = np.fromfile(fp_, dtype=_VISCAL_INFO_TYPE, count=1)
+                cal = self._read_header(fp_, dtype=_VISCAL_INFO_TYPE, count=1)
             else:
-                cal = np.fromfile(fp_, dtype=_IRCAL_INFO_TYPE, count=1)
+                cal = self._read_header(fp_, dtype=_IRCAL_INFO_TYPE, count=1)
 
             header['calibration'] = cal
 
-            header["block6"] = np.fromfile(
+            header["block6"] = self._read_header(
                 fp_, dtype=_INTER_CALIBRATION_INFO_TYPE, count=1)
-            header["block7"] = np.fromfile(
+            header["block7"] = self._read_header(
                 fp_, dtype=_SEGMENT_INFO_TYPE, count=1)
-            header["block8"] = np.fromfile(
+            header["block8"] = self._read_header(
                 fp_, dtype=_NAVIGATION_CORRECTION_INFO_TYPE, count=1)
             # 8 The navigation corrections:
             ncorrs = header["block8"]['numof_correction_info_data'][0]
@@ -384,12 +420,12 @@ class AHIHSDFileHandler(BaseFileHandler):
             ])
             corrections = []
             for i in range(ncorrs):
-                corrections.append(np.fromfile(fp_, dtype=dtype, count=1))
+                corrections.append(self._read_header(fp_, dtype=dtype, count=1))
             fp_.seek(40, 1)
             header['navigation_corrections'] = corrections
-            header["block9"] = np.fromfile(fp_,
-                                           dtype=_OBS_TIME_INFO_TYPE,
-                                           count=1)
+            header["block9"] = self._read_header(fp_,
+                                                 dtype=_OBS_TIME_INFO_TYPE,
+                                                 count=1)
             numobstimes = header["block9"]['number_of_observation_times'][0]
 
             dtype = np.dtype([
@@ -398,15 +434,15 @@ class AHIHSDFileHandler(BaseFileHandler):
             ])
             lines_and_times = []
             for i in range(numobstimes):
-                lines_and_times.append(np.fromfile(fp_,
-                                                   dtype=dtype,
-                                                   count=1))
+                lines_and_times.append(self._read_header(fp_,
+                                                         dtype=dtype,
+                                                         count=1))
             header['observation_time_information'] = lines_and_times
             fp_.seek(40, 1)
 
-            header["block10"] = np.fromfile(fp_,
-                                            dtype=_ERROR_INFO_TYPE,
-                                            count=1)
+            header["block10"] = self._read_header(fp_,
+                                                  dtype=_ERROR_INFO_TYPE,
+                                                  count=1)
             dtype = np.dtype([
                 ("line_number", "<u2"),
                 ("numof_error_pixels_per_line", "<u2"),
@@ -415,18 +451,22 @@ class AHIHSDFileHandler(BaseFileHandler):
                 'number_of_error_info_data'][0]
             err_info_data = []
             for i in range(num_err_info_data):
-                err_info_data.append(np.fromfile(fp_, dtype=dtype, count=1))
+                err_info_data.append(self._read_header(fp_, dtype=dtype,
+                                                       count=1))
             header['error_information_data'] = err_info_data
             fp_.seek(40, 1)
 
-            np.fromfile(fp_, dtype=_SPARE_TYPE, count=1)
+            self._read_header(fp_, dtype=_SPARE_TYPE, count=1)
 
             nlines = int(header["block2"]['number_of_lines'][0])
             ncols = int(header["block2"]['number_of_columns'][0])
 
-            res = da.from_array(np.memmap(self.filename, offset=fp_.tell(),
-                                          dtype='<u2',  shape=(nlines, ncols), mode='r'),
+            res = da.from_array(self._read_data(filename=self.filename,
+                                                file_handle=fp_,
+                                                dtype=np.dtype('<u2'),
+                                                shape=(nlines, ncols)),
                                 chunks=CHUNK_SIZE)
+
         res = da.where(res == 65535, np.float32(np.nan), res)
 
         self._header = header
@@ -506,3 +546,15 @@ class AHIHSDFileHandler(BaseFileHandler):
         c2_ = self._header['calibration']["c2_rad2tb_conversion"][0]
 
         return (c0_ + c1_ * Te_ + c2_ * Te_ ** 2).clip(0)
+
+
+class AHIHSDFileHandler(AHIHSDBaseFileHandler):
+    def _open(self, filename, mode='r', size=None):
+        return open(filename, mode=mode)
+
+    def _read_header(self, file_handle, dtype, count):
+        return np.fromfile(file_handle, dtype=dtype, count=count)
+
+    def _read_data(self, filename, file_handle, dtype, shape):
+        return np.memmap(filename, offset=file_handle.tell(),
+                         dtype=dtype, shape=shape, mode='r')
