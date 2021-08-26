@@ -216,6 +216,14 @@ def _get_time_bounds(datasets):
     return xr.DataArray(time_bounds, dims=['time', 'bnds_1d'])
 
 
+def _have_time_dimensions(datasets):
+    return all(_has_time_dimension(ds) for ds in datasets)
+
+
+def _has_time_dimension(dataset):
+    return 'time' in dataset.dims
+
+
 def _is_timeseries(datasets):
     return all('start_time' in ds.coords for ds in datasets)
 
@@ -232,8 +240,14 @@ def _get_time_bounds_from_coords(datasets):
 
 
 def _get_time_bounds_from_attrs(datasets):
-    start_times = np.nanmin(_get_times_from_attrs(datasets, 'start_time'))
-    end_times = np.nanmax(_get_times_from_attrs(datasets, 'end_time'))
+    times = [ds['time'] for ds in datasets]
+    start_times = _get_times_from_attrs(datasets, 'start_time')
+    end_times = _get_times_from_attrs(datasets, 'end_time')
+    if len(np.unique(times)) == 1:
+        # If the timestamp is identical in all datasets, xarray will reduce
+        # them into one. In that case use the min/max of all time bounds.
+        start_times = np.nanmin(start_times)
+        end_times = np.nanmin(end_times)
     return np.vstack([start_times, end_times]).transpose()
 
 
@@ -490,7 +504,7 @@ def _set_default_time_encoding(encoding, dataset):
     Make sure time coordinates and bounds have the same units. Default is xarray's CF datetime
     encoding, which can be overridden by user-defined encoding.
     """
-    if 'time' in dataset:
+    if _has_time_dimension(dataset):
         try:
             dtnp64 = dataset['time'].data[0]
         except IndexError:
@@ -503,7 +517,7 @@ def _set_default_time_encoding(encoding, dataset):
                       'calendar': time_enc['calendar'],
                       '_FillValue': None}
         encoding['time'] = time_enc
-        encoding['time_bnds'] = bounds_enc  # FUTURE: Not required anymore with xarray-0.14+
+        encoding['time_bnds'] = bounds_enc
 
 
 def _set_encoding_dataset_names(encoding, dataset, numeric_name_prefix):
@@ -654,7 +668,7 @@ class CFWriter(Writer):
     def _collect_datasets(self, datasets, epoch=EPOCH, flatten_attrs=False, exclude_attrs=None, include_lonlats=True,
                           pretty=False, compression=None, include_orig_name=True, numeric_name_prefix='CHANNEL_'):
         """Collect and prepare datasets to be written."""
-        time_bounds = _get_time_bounds(datasets)
+        time_bounds = _get_time_bounds(datasets) if _have_time_dimensions(datasets) else None
         ds_collection = {}
         for ds in datasets:
             ds_collection.update(get_extra_ds(ds))
@@ -784,7 +798,7 @@ class CFWriter(Writer):
                 include_lonlats=include_lonlats, pretty=pretty, compression=compression,
                 include_orig_name=include_orig_name, numeric_name_prefix=numeric_name_prefix)
             dataset = xr.Dataset(datas)
-            if 'time' in dataset:
+            if _has_time_dimension(dataset):
                 _add_time_bounds(dataset, time_bounds)
             else:
                 grp_str = ' of group {}'.format(group_name) if group_name is not None else ''
