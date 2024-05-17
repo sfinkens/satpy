@@ -533,8 +533,8 @@ class DatasetWrapper:
         except KeyError:
             time = self["time"]
 
-        time_offset = time.attrs["add_offset"]
-        condition = time == time.attrs["_FillValue"]
+        time_offset = time.encoding["add_offset"]
+        condition = time == time.encoding["_FillValue"]
 
         time = xr.where(condition, np.nan, time + time_offset)
         time = time.astype("datetime64[s]").astype("datetime64[ns]")
@@ -577,7 +577,6 @@ class FiduceoMviriBase(BaseFileHandler):
         nc_raw = xr.open_dataset(
             filename,
             decode_times=False,
-            decode_cf=False,
         )
 
         self.nc = DatasetWrapper(nc_raw)
