@@ -457,7 +457,20 @@ class DatasetWrapper:
 
     def __init__(self, nc):
         """Wrap the given dataset."""
-        self.nc = nc
+        self._fix_duplicate_dimensions(nc)
+        self.nc = self._chunk(nc)
+
+    def _fix_duplicate_dimensions(self, nc):
+        nc.variables["covariance_spectral_response_function_vis"].dims = ("srf_size_1", "srf_size_2")
+
+    def _chunk(self, nc):
+        chunks = {
+            "x": CHUNK_SIZE,
+            "y": CHUNK_SIZE,
+            "x_ir_wv": CHUNK_SIZE,
+            "y_ir_wv": CHUNK_SIZE
+        }
+        return nc.chunk(chunks)
 
     @property
     def attrs(self):
@@ -563,12 +576,8 @@ class FiduceoMviriBase(BaseFileHandler):
         self.mask_bad_quality = mask_bad_quality
         nc_raw = xr.open_dataset(
             filename,
-            # chunks={"x": CHUNK_SIZE,
-            #         "y": CHUNK_SIZE,
-            #         "x_ir_wv": CHUNK_SIZE,
-            #         "y_ir_wv": CHUNK_SIZE},
             decode_times=False,
-            decode_cf=False
+            decode_cf=False,
         )
 
         self.nc = DatasetWrapper(nc_raw)

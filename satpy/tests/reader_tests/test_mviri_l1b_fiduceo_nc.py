@@ -272,6 +272,7 @@ def fixture_fake_dataset():
             dtype=np.uint8
         )
     )
+    cov = da.from_array([[1, 2], [3, 4]])
     time = np.arange(4) * 60 * 60
     time_fill_value = 4294967295
     time_add_offset = 0
@@ -308,6 +309,7 @@ def fixture_fake_dataset():
             "sub_satellite_longitude_end": np.nan,
             "sub_satellite_latitude_start": np.nan,
             "sub_satellite_latitude_end": 0.1,
+            "covariance_spectral_response_function_vis": (("srf_size", "srf_size"), cov)
         },
         coords={
             "y": [1, 2, 3, 4],
@@ -329,28 +331,34 @@ def fixture_fake_dataset():
     return ds
 
 
+@pytest.fixture(name="fake_file")
+def fixture_fake_file(fake_dataset, tmp_path):
+    """Write a fake netcdf file."""
+    filename = tmp_path / "test.nc"
+    fake_dataset.to_netcdf(filename)
+    return filename
+
+
 @pytest.fixture(
     name="file_handler",
     params=[FiduceoMviriEasyFcdrFileHandler,
             FiduceoMviriFullFcdrFileHandler]
 )
-def fixture_file_handler(fake_dataset, request):
+def fixture_file_handler(fake_file, request):
     """Create mocked file handler."""
     marker = request.node.get_closest_marker("file_handler_data")
     mask_bad_quality = True
     if marker:
         mask_bad_quality = marker.kwargs["mask_bad_quality"]
     fh_class = request.param
-    with mock.patch("satpy.readers.mviri_l1b_fiduceo_nc.xr.open_dataset") as open_dataset:
-        open_dataset.return_value = fake_dataset
-        return fh_class(
-            filename="filename",
-            filename_info={"platform": "MET7",
-                           "sensor": "MVIRI",
-                           "projection_longitude": "57.0"},
-            filetype_info={"foo": "bar"},
-            mask_bad_quality=mask_bad_quality
-        )
+    return fh_class(
+        filename=fake_file,
+        filename_info={"platform": "MET7",
+                       "sensor": "MVIRI",
+                       "projection_longitude": "57.0"},
+        filetype_info={"foo": "bar"},
+        mask_bad_quality=mask_bad_quality
+    )
 
 
 @pytest.fixture(name="reader")
