@@ -138,7 +138,7 @@ class TestFilenameInstrumentConsistency:
     def _find_mismatches(self, files):
         return [
             file for file in files
-            if inst_utils.internal_to_wmo(file.stem) not in inst_utils.OSCAR
+            if not _is_valid_instrument(inst_utils.internal_to_wmo(file.stem))
         ]
 
     def test_composite_filenames_match_instruments(self):
@@ -161,3 +161,11 @@ class TestFilenameInstrumentConsistency:
             if f.stem not in exceptions
         ]
         assert not self._find_mismatches(files)
+
+
+def _is_valid_instrument(instrument: str):
+    try:
+        return instrument in inst_utils.OSCAR,
+    except TypeError:
+        # Python-3.11
+        return any(member.value == instrument for member in inst_utils.OSCAR)
