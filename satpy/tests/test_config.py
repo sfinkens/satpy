@@ -168,7 +168,7 @@ def fake_composite_plugin_etc_path(tmp_path: Path) -> Iterator[Path]:
 def _write_fake_composite_yaml(yaml_filename: str) -> None:
     with open(yaml_filename, "w") as comps_file:
         comps_file.write("""
-    sensor_name: visir/fake_sensor
+    instrument: visir/fake_sensor
 
     composites:
         fake_composite:

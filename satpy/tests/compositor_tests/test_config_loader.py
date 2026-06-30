@@ -17,7 +17,12 @@
 
 """Tests for compositor config handling."""
 
+from typing import Optional
+
+import pytest
+
 import satpy
+from satpy.composites.config_loader import load_compositor_configs_for_sensors
 
 
 def test_bad_sensor_yaml_configs(tmp_path):
@@ -26,8 +31,6 @@ def test_bad_sensor_yaml_configs(tmp_path):
     But the bad YAML also shouldn't crash composite configuration loading.
 
     """
-    from satpy.composites.config_loader import load_compositor_configs_for_sensors
-
     comp_dir = tmp_path / "composites"
     comp_dir.mkdir()
     comp_yaml = comp_dir / "fake_sensor.yaml"
@@ -40,19 +43,44 @@ def test_bad_sensor_yaml_configs(tmp_path):
         assert "fake_composite" not in comps["fake_sensor"]
 
 
-def _create_fake_composite_config(yaml_filename: str):
+def _create_fake_composite_config(yaml_filename: str, extra_content: Optional[dict]=None):
     import yaml
 
     from satpy.composites.aux_data import StaticImageCompositor
-
+    content = {
+        "composites": {
+            "fake_composite": {
+                "compositor": StaticImageCompositor,
+                "url": "http://example.com/image.png",
+            }
+        }
+    }
+    if extra_content:
+        content.update(extra_content)
     with open(yaml_filename, "w") as comp_file:
-        yaml.dump({
-            "composites": {
-                "fake_composite": {
-                    "compositor": StaticImageCompositor,
-                    "url": "http://example.com/image.png",
-                },
-            },
-        },
-            comp_file,
-        )
+        yaml.dump(content, comp_file)
+
+
+# 8< v1.0
+class TestUserConfigWithDeprecatedSensorNameProperty:
+    """Test loading user config with deprecated sensor_name property."""
+
+    @pytest.fixture
+    def user_comp_dir(self, tmp_path):
+        """Get directory with user composites."""
+        return tmp_path / "etc" / "composites"
+
+    @pytest.fixture
+    def user_config_file(self, user_comp_dir):
+        """Write user config with old sensor_name property."""
+        filename = user_comp_dir / "myinstrument.yaml"
+        user_comp_dir.mkdir(parents=True)
+        _create_fake_composite_config(filename, {"sensor_name": "myinstrument"})
+
+    def test_finding_user_config(self, user_comp_dir, user_config_file):
+        """Test loading user config with deprecated sensor_name property."""
+        with satpy.config.set(config_path=[str(user_comp_dir.parent)]):
+            with pytest.warns(DeprecationWarning, match="Use 'instrument' instead."):
+                comps, _ = load_compositor_configs_for_sensors(["MyInstrument"])
+            assert "MyInstrument" in comps
+# >8 v1.0

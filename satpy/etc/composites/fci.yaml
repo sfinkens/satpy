@@ -1,4 +1,4 @@
-sensor_name: visir/fci
+instrument: visir/fci
 
 composites:
   ### L2

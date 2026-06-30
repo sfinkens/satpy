@@ -693,7 +693,7 @@ class TestParallaxCorrectionModifier:
 
 
 _test_yaml_code = """
-sensor_name: visir
+instrument: visir
 
 modifiers:
   parallax_corrected:

@@ -1,4 +1,4 @@
-sensor_name: visir/scatterometer
+instrument: visir/scatterometer
 
 composites:
   scat_wind_speed:

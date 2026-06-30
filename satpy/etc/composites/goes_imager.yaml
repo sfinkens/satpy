@@ -1,5 +1,5 @@
 # XXX arb
-sensor_name: visir/goes_imager
+instrument: visir/goes_imager
 
 composites:
   overview:

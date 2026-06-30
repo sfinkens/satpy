@@ -1,4 +1,4 @@
-sensor_name: visir/avhrr-3
+instrument: visir/avhrr-3
 
 composites:
 

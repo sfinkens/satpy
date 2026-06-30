@@ -1,4 +1,4 @@
-sensor_name: visir/seviri
+instrument: visir/seviri
 
 modifiers:
   sunz_corrected:

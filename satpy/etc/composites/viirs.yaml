@@ -1,4 +1,4 @@
-sensor_name: visir/viirs
+instrument: visir/viirs
 
 modifiers:
   rayleigh_corrected_crefl:

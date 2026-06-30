@@ -1,4 +1,4 @@
-sensor_name: visir/mersi-ll
+instrument: visir/mersi-ll
 
 composites:
 

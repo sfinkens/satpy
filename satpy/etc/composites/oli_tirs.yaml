@@ -1,4 +1,4 @@
-sensor_name: visir/oli_tirs
+instrument: visir/oli_tirs
 
 modifiers:
   rayleigh_corrected:

@@ -1,4 +1,4 @@
-sensor_name: mhs
+instrument: mhs
 
 composites:
   mw183_humidity:
