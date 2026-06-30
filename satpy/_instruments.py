@@ -270,3 +270,4 @@ def _warn_if_deprecated_instrument_in_filename(
                f"the file to '{'/'.join(new_files)}', otherwise it will be "
                f"ignored in Satpy v1.0.")
         warnings.warn(msg, DeprecationWarning, stacklevel=3)
+# >8 v1.0

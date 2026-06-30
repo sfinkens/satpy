@@ -277,7 +277,9 @@ def load_compositor_configs_for_sensor(sensor_name: str) -> tuple[dict[str, dict
         search_dirs=paths, check_exists=True)
     # 8< v1.0
     # Users might have composites that still use the legacy instrument name.
-    depr_inst_names = inst_utils.get_deprecated_instrument_aliases_for_composites({sensor_name})
+    depr_inst_names = inst_utils.get_deprecated_instrument_aliases_for_composites(
+        {sensor_name}
+    )
     for depr_inst_name in depr_inst_names:
         depr_filename = depr_inst_name + ".yaml"
         logger.debug("Looking for composites config file %s", depr_filename)
@@ -285,7 +287,9 @@ def load_compositor_configs_for_sensor(sensor_name: str) -> tuple[dict[str, dict
             os.path.join("composites", depr_filename),
             search_dirs=paths, check_exists=True)
         for depr_config in depr_configs:
-            inst_utils.warn_if_deprecated_instrument_in_composite_filename(depr_inst_name, depr_config)
+            inst_utils.warn_if_deprecated_instrument_in_composite_filename(
+                depr_inst_name, depr_config
+            )
             composite_configs.append(depr_config)
     # >8 v1.0
     if not composite_configs:

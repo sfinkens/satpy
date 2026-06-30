@@ -163,7 +163,9 @@ class Enhancer:
             # options, only entire sections are overwritten
             for config_file in config_files:
                 # 8< v1.0
-                inst_utils.warn_if_deprecated_instrument_in_enhancement_filename(sensor_name, config_file)
+                inst_utils.warn_if_deprecated_instrument_in_enhancement_filename(
+                    sensor_name, config_file
+                )
                 # >8 v1.0
                 yield config_file
 

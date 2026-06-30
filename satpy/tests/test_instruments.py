@@ -113,7 +113,7 @@ def test_internal_to_wmo(instrument, expected):
 
 
 class TestFilenameInstrumentConsistency:
-    """Test that filenames match instruments."""
+    """Check if enhancement/composite filenames match instrument names."""
 
     etc_dir = Path(satpy.__file__).parent / "etc/"
 
@@ -165,7 +165,7 @@ class TestFilenameInstrumentConsistency:
 
 def _is_valid_instrument(instrument: str):
     try:
-        return instrument in inst_utils.OSCAR,
+        return instrument in inst_utils.OSCAR
     except TypeError:
         # Python-3.11
         return any(member.value == instrument for member in inst_utils.OSCAR)
