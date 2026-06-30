@@ -1,4 +1,4 @@
-sensor_name: visir/glm
+instrument: visir/glm
 composites:
   C14_flash_extent_density:
     compositor: !!python/name:satpy.composites.fill.BackgroundCompositor

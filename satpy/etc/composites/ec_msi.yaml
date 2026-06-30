@@ -1,4 +1,4 @@
-sensor_name: visir/ec_msi
+instrument: visir/ec_msi
 
 
 modifiers:

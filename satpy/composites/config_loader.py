@@ -183,9 +183,20 @@ def _load_config(composite_configs):
         with open(composite_config, "r", encoding="utf-8") as conf_file:
             recursive_dict_update(conf, yaml.load(conf_file, Loader=UnsafeLoader))
     try:
-        sensor_name = conf["sensor_name"]
+        sensor_name = conf["instrument"]
     except KeyError:
-        logger.debug('No "sensor_name" tag found in %s, skipping.',
+        # 8< v1.0
+        sensor_name_legacy = conf.get("sensor_name")
+        if sensor_name_legacy:
+            warnings.warn(
+                "The 'sensor_name' composite property is deprecated and "
+                "will be ignored in Satpy v1.0. Use 'instrument' instead.",
+                DeprecationWarning,
+                stacklevel=2
+            )
+            sensor_name = sensor_name_legacy
+        # >8 v1.0
+        logger.debug('No "instrument" tag found in %s, skipping.',
                      composite_configs)
         return {}, {}, {}
 

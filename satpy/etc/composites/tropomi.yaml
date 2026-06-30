@@ -1,4 +1,4 @@
-sensor_name: tropomi
+instrument: tropomi
 
 composites:
 

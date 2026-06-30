@@ -1,4 +1,4 @@
-sensor_name: visir/sgli
+instrument: visir/sgli
 
 
 modifiers:

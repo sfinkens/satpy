@@ -454,7 +454,7 @@ class ParallaxCorrectionModifier(ModifierBase):
     To use this, add to ``composites/visir.yaml`` within ``SATPY_CONFIG_PATH``
     something like::
 
-        sensor_name: visir
+        instrument: visir
 
         modifiers:
           parallax_corrected:

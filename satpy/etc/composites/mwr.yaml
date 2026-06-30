@@ -1,4 +1,4 @@
-sensor_name: microwave/mwr
+instrument: microwave/mwr
 
 composites:
   mw183_humidity:

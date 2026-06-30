@@ -1,4 +1,4 @@
-sensor_name: visir/epic
+instrument: visir/epic
 
 modifiers:
   sunz_corrected:

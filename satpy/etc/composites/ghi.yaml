@@ -1,4 +1,4 @@
-sensor_name: visir/ghi
+instrument: visir/ghi
 
 composites:
   true_color:

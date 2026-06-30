@@ -1,4 +1,4 @@
-sensor_name: visir/mersi-rm
+instrument: visir/mersi-rm
 
 modifiers:
   rayleigh_corrected:

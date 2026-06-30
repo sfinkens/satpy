@@ -1,4 +1,4 @@
-sensor_name: visir/insat_img
+instrument: visir/insat_img
 
 composites:
   cloud_phase_distinction:

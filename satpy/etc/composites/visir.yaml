@@ -1,4 +1,4 @@
-sensor_name: visir
+instrument: visir
 composite_identification_keys:
   name:
     required: true

@@ -328,7 +328,7 @@ Simple RGB composite
 This is the overview composite shown in the first code example above
 using :class:`satpy.composites.core.GenericCompositor`::
 
-    sensor_name: visir
+    instrument: visir
 
     composites:
       overview:
@@ -341,10 +341,10 @@ using :class:`satpy.composites.core.GenericCompositor`::
 
 For an instrument specific version (here MSG/SEVIRI), we should use
 the channel _names_ instead of wavelengths.  Note also that the
-sensor_name is now combination of visir and seviri, which means that
+instrument is now combination of visir and seviri, which means that
 it extends the generic visir composites::
 
-    sensor_name: visir/seviri
+    instrument: visir/seviri
 
     composites:
 
@@ -357,7 +357,7 @@ it extends the generic visir composites::
         standard_name: overview
 
 In the following examples only the composite receipes are shown, and
-the header information (sensor_name, composites) and intendation needs
+the header information (instrument, composites) and intendation needs
 to be added.
 
 Using modifiers

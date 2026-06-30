@@ -53,7 +53,7 @@ def _setup_custom_composite_config(base_dir):
     composite_config = base_dir.mkdir("composites").join("visir.yaml")
     with open(composite_config, "w") as comp_file:
         yaml.dump({
-            "sensor_name": "visir",
+            "instrument": "visir",
             "modifiers": {
                 "test_modifier": {
                     "modifier": ReflectanceCorrector,

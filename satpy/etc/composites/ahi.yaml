@@ -1,4 +1,4 @@
-sensor_name: visir/ahi
+instrument: visir/ahi
 
 modifiers:
   rayleigh_corrected:

@@ -1,4 +1,4 @@
-sensor_name: visir/slstr
+instrument: visir/slstr
 composite_identification_keys:
   name:
     required: true
