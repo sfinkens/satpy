@@ -15,6 +15,8 @@
 # satpy.  If not, see <http://www.gnu.org/licenses/>.
 """Unit tests for instrument helpers."""
 
+from pathlib import Path
+
 import pytest
 
 import satpy._instruments as inst_utils
@@ -104,3 +106,62 @@ def test_get_one_instrument_from_attrs_with_warning(caplog):
 def test_internal_to_wmo(instrument, expected):
     """Test conversion to WMO instrument name."""
     assert inst_utils.internal_to_wmo(instrument) == expected
+
+
+class TestFilenameInstrumentConsistency:
+    """Check if enhancement/composite filenames match instrument names."""
+
+    etc_dir = Path(satpy.__file__).parent / "etc/"
+
+    def test_enhancement_filenames_match_instruments(self):
+        """Test that enhancement filenames match instruments."""
+        enh_dir = self.etc_dir / "enhancements"
+        exceptions = [
+            # Not a WMO instrument name
+            "generic",
+            "hsaf",
+            "mimic",
+            "scatterometer",
+            # Shared by multiple instruments
+            "mwr"
+        ]
+        files = [
+            f for f in enh_dir.glob("*.yaml")
+            if f.stem not in exceptions
+        ]
+        assert not self._find_mismatches(files)
+
+    def _find_mismatches(self, files):
+        return [
+            file for file in files
+            if not _is_valid_instrument(inst_utils.internal_to_wmo(file.stem))
+        ]
+
+    def test_composite_filenames_match_instruments(self):
+        """Test that composite filenames match instruments."""
+        comp_dir = self.etc_dir / "composites"
+        exceptions = [
+            # Not a WMO instrument name
+            "hsaf",
+            "visir",
+            "microwave",
+            # Shared by multiple instruments
+            "sar",
+            "scatterometer",
+            "goes_imager",
+            "oli_tirs",
+            "mwr"
+            ]
+        files = [
+            f for f in comp_dir.glob("*.yaml")
+            if f.stem not in exceptions
+        ]
+        assert not self._find_mismatches(files)
+
+
+def _is_valid_instrument(instrument: str):
+    try:
+        return instrument in inst_utils.OSCAR
+    except TypeError:
+        # Python-3.11
+        return any(member.value == instrument for member in inst_utils.OSCAR)

@@ -387,6 +387,40 @@ enhancements:
         np.testing.assert_almost_equal(img.data.isel(bands=0).max().values, 0.5)
 
 
+
+# 8< v1.0
+import satpy  # noqa
+import satpy._instruments as inst_utils  # noqa
+
+
+class TestUserConfigWithDeprecatedFilename:
+    """Test finding user config with deprecated filename."""
+
+    @pytest.fixture
+    def user_enh_dir(self, tmp_path):
+        """Get directory with user enhancements."""
+        return tmp_path / "etc" / "enhancements"
+
+    @pytest.fixture(autouse=True)
+    def user_config_files(self, user_enh_dir):
+        """Write user config with old instrument in the filename."""
+        user_enh_dir.mkdir(parents=True)
+        depr_file = user_enh_dir / "old-name.yaml"
+        depr_file.touch()
+
+    def test_finding_user_config(self, user_enh_dir, monkeypatch):
+        """Test finding user config with old instrument in the filename."""
+        monkeypatch.setitem(inst_utils.RENAMED_ENH_INSTRUMENTS, "New Name", "old-name")
+        with satpy.config.set(config_path=[str(user_enh_dir.parent)]):
+            enhancer = Enhancer()
+            with pytest.warns(DeprecationWarning, match="has been renamed"):
+                config_files = set(
+                    enhancer.get_sensor_enhancement_config({"New Name"})
+                )
+            assert config_files == {str(user_enh_dir / "old-name.yaml")}
+# >8 v1.0
+
+
 class TestReaderEnhancerConfigs(_BaseCustomEnhancementConfigTests):
     """Test enhancement configs that use reader name."""
 
